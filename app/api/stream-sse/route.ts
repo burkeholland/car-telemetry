@@ -1,10 +1,9 @@
 /**
- * Server-Sent Events (SSE) Fallback Route (Step 4)
- * ================================================
- * Dedicated SSE endpoint for clients that can't use WebSocket.
- * Identical functionality to /api/stream but explicitly SSE-only.
- * 
- * Usage: EventSource('/api/stream-sse') in the browser
+ * SSE FALLBACK (Deprecated)
+ * =========================
+ * Dedicated SSE endpoint retained for legacy / fallback support. Primary
+ * real-time transport is now WebSocket at `/api/stream-ws` offering
+ * bidirectional messaging and heartbeat.
  */
 
 import { NextRequest } from 'next/server';

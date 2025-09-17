@@ -50,9 +50,13 @@ Edge Cases & Behaviors:
 - Optional packet loss mode (drop every Nth sample) for resilience tests.
 
 ## 5. Transport Strategy
-- Primary: WebSocket route handler (`/api/stream`). Reasons: bidirectional potential (client control), lower latency, efficient.
-- Fallback: SSE (`/api/stream-sse`) if WS blocked; send serverTime + sample.
-- Backpressure: limit client ring buffer size; if overflow, drop oldest & increment `droppedPackets` metric.
+- Primary: WebSocket route handler (`/api/stream-ws`). Reasons: bidirectional potential (client control), lower latency, heartbeat, efficient payload framing.
+- Fallback: SSE (`/api/stream` legacy & `/api/stream-sse` explicit) if WS unavailable (e.g., local dev runtime lacking `WebSocketPair`). Provider auto‑falls back after initial WS error.
+- Heartbeat: server `ping` every 15s, client replies `pong`; server drops if >45s silence.
+- Envelope: discriminated union in `types/transport.ts` (`connected | telemetry | ping | pong | error`).
+- Validation: Zod runtime schema on both ends; telemetry samples validated against `TelemetrySampleSchema`.
+- Backpressure: client ring buffer cap with oldest-drop strategy + counters (`dropped`).
+- Future optimization: optional MessagePack / compression once multi‑vehicle or >10Hz scaling demands.
 
 ## 6. Client State Management
 - Live Stream: Zustand store (mutable, minimal re-renders) or Signals (alternative) with selectors.

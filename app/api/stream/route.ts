@@ -1,14 +1,9 @@
 /**
- * WebSocket Stream Route Handler (Step 4)
+ * DEPRECATED SSE ENDPOINT (Step 4 legacy)
  * =======================================
- * Real-time telemetry streaming via WebSocket connection.
- * Connects to the simulation engine and broadcasts TelemetrySample events to all connected clients.
- * 
- * Features:
- * - Auto-starts simulation when first client connects
- * - Broadcasts to all connected clients simultaneously  
- * - Clean disconnection handling
- * - Basic connection metrics for observability
+ * This route previously provided real-time telemetry via Server-Sent Events.
+ * It remains for backward compatibility and as a fallback for environments
+ * where WebSockets are not available. Prefer `/api/stream-ws`.
  */
 
 import { NextRequest } from 'next/server';
