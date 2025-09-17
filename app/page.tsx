@@ -1,104 +1,83 @@
 "use client";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
-import { ModeToggle } from "@/components/mode-toggle";
+import { useTelemetryStore, selectConnection, selectLatency, selectLatest } from '@/lib/state/telemetry-store';
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { ModeToggle } from "@/components/mode-toggle";
+import { AlertsDrawerPlaceholder } from '@/components/dashboard/alerts-drawer';
+import { SpeedGaugePlaceholder } from '@/components/dashboard/speed-gauge';
+import { RpmGaugePlaceholder } from '@/components/dashboard/rpm-gauge';
+import { GearIndicatorPlaceholder } from '@/components/dashboard/gear-indicator';
+import { DriverInputsPlaceholder } from '@/components/dashboard/driver-inputs';
+import { EngineTempsPanelPlaceholder } from '@/components/dashboard/engine-temps-panel';
+import { BatteryPanelPlaceholder } from '@/components/dashboard/battery-panel';
+import { TireGridPlaceholder } from '@/components/dashboard/tire-grid';
+import { TrackMapStub } from '@/components/dashboard/track-map-stub';
+import { LiveChartsContainerPlaceholder } from '@/components/dashboard/live-charts-container';
 
-export default function Home() {
-  const [open, setOpen] = useState(false);
-  const [switchOn, setSwitchOn] = useState(true);
+export default function DashboardPage() {
+  const connection = useTelemetryStore(selectConnection);
+  const latency = useTelemetryStore(selectLatency);
+  const latest = useTelemetryStore(selectLatest);
   return (
-    <div className="px-6 py-10 max-w-6xl mx-auto space-y-8">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">UI Scaffold Demo</h1>
+    <div className="flex flex-col h-full min-h-screen">
+      <header className="flex items-center justify-between px-6 py-4 border-b">
+        <div className="flex items-baseline gap-4">
+          <h1 className="text-xl font-semibold tracking-tight">Telemetry Dashboard</h1>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="uppercase tracking-wide">Conn:</span>
+            <Badge variant={connection === 'open' ? 'secondary' : 'outline'}>{connection}</Badge>
+            <span className="uppercase tracking-wide ml-4">Latency:</span>
+            <span>{latency != null ? `${latency} ms` : '—'}</span>
+            {latest && (
+              <span className="ml-4 tabular-nums text-muted-foreground">{latest.speedKph.toFixed(1)} kph / {latest.rpm} rpm</span>
+            )}
+          </div>
+        </div>
         <div className="flex items-center gap-3">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div><Badge variant="secondary">Status OK</Badge></div>
-              </TooltipTrigger>
-              <TooltipContent>Example tooltip.</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <AlertsDrawerPlaceholder />
           <ModeToggle />
         </div>
       </header>
-      <Separator />
-      <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="details">Details</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid sm:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Interactive Elements</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2 flex-wrap">
-                  <Button>Primary Button</Button>
-                  <Button variant="secondary">Secondary</Button>
-                  <Button variant="outline">Outline</Button>
-                  <Button variant="ghost">Ghost</Button>
-                  <Button variant="destructive">Destructive</Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch checked={switchOn} onCheckedChange={(v: boolean) => setSwitchOn(v)} />
-                  <span className="text-sm text-muted-foreground">Toggle example ({switchOn ? 'on' : 'off'})</span>
-                </div>
-                <Progress value={42} />
-                <Dialog open={open} onOpenChange={setOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline">Open Dialog</Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <h2 className="text-lg font-semibold mb-2">Dialog Title</h2>
-                    <p className="text-sm text-muted-foreground mb-4">This dialog demonstrates the Radix Dialog primitive styling.</p>
-                    <Button onClick={() => setOpen(false)}>Close</Button>
-                  </DialogContent>
-                </Dialog>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Scroll & Skeleton</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-40 rounded-md border p-2 space-y-2">
-                  {[...Array(10)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <Skeleton className="h-8 w-8 rounded-full" />
-                      <Skeleton className="h-4 w-1/2" />
-                      <Skeleton className="h-4 w-1/4" />
-                    </div>
-                  ))}
-                </ScrollArea>
-              </CardContent>
-            </Card>
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="hidden md:flex w-60 border-r p-4 flex-col gap-4 bg-background/50">
+          <div>
+            <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-2">Vehicle</h2>
+            <div className="text-sm leading-tight">
+              <div className="font-medium">SimCar</div>
+              <div className="text-muted-foreground">Session Seed</div>
+              <div className="text-[10px] uppercase tracking-wide mt-2 text-muted-foreground">Lap</div>
+              <div className="text-lg font-semibold tabular-nums">1</div>
+            </div>
           </div>
-        </TabsContent>
-        <TabsContent value="details">
-          <Card>
-            <CardHeader>
-              <CardTitle>Implementation Notes</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground space-y-2">
-              <p>These primitives form the design system foundation for the telemetry dashboard.</p>
-              <p>Next steps: implement core types & simulation engine (Plan Step 2+3).</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        </aside>
+        <main className="flex-1 overflow-auto p-6 space-y-6">
+          <section>
+            <h2 className="sr-only">Primary Gauges</h2>
+            <div className="grid md:grid-cols-4 gap-4">
+              <SpeedGaugePlaceholder />
+              <RpmGaugePlaceholder />
+              <GearIndicatorPlaceholder />
+              <DriverInputsPlaceholder />
+            </div>
+          </section>
+          <section>
+            <h2 className="sr-only">Systems Panels</h2>
+            <div className="grid md:grid-cols-4 gap-4">
+              <EngineTempsPanelPlaceholder />
+              <BatteryPanelPlaceholder />
+              <TireGridPlaceholder />
+              <TrackMapStub />
+            </div>
+          </section>
+          <section>
+            <h2 className="sr-only">Charts</h2>
+            <LiveChartsContainerPlaceholder />
+          </section>
+        </main>
+      </div>
+      <footer className="px-6 py-3 border-t text-[11px] text-muted-foreground flex items-center justify-between">
+        <span>Dashboard Skeleton (Step 6)</span>
+        <span>Next: Bind live data (Step 7)</span>
+      </footer>
     </div>
   );
 }

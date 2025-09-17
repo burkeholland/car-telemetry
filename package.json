@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sim:preview": "tsx scripts/preview-sim.ts --seed=1 --samples=12",
+    "stream:test": "tsx scripts/test-stream.ts --endpoint=sse --samples=8"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.0",
@@ -27,7 +29,8 @@
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.3",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^4.1.9"
+    "zod": "^4.1.9",
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -38,6 +41,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "tsx": "^4.7.0"
   }
 }

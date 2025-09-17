@@ -2,9 +2,7 @@ import * as React from "react";
 import * as SeparatorPrimitive from "@radix-ui/react-separator";
 import { cn } from "@/lib/utils";
 
-export interface SeparatorProps extends React.ComponentPropsWithoutRef<typeof SeparatorPrimitive.Root> {}
-
-export function Separator({ className, orientation = "horizontal", decorative = true, ...props }: SeparatorProps) {
+export function Separator({ className, orientation = "horizontal", decorative = true, ...props }: React.ComponentPropsWithoutRef<typeof SeparatorPrimitive.Root>) {
   return (
     <SeparatorPrimitive.Root
       decorative={decorative}
