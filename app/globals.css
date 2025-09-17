@@ -1,26 +1,98 @@
 @import "tailwindcss";
 
+/* CSS Variables (Design Tokens) */
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #111827;
+  --surface: #f8fafc;
+  --border: #e2e8f0;
+  --accent: #2563eb;
+  --accent-foreground: #f8fafc;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --primary: #0ea5e9;
+  --primary-foreground: #f0f9ff;
+  --ring: #3b82f6;
+  --status-ok: #10b981;
+  --status-warn: #f59e0b;
+  --status-critical: #ef4444;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: #0a0f17;
+  --foreground: #e5e7eb;
+  --surface: #111827;
+  --border: #1f2937;
+  --accent: #1d4ed8;
+  --accent-foreground: #f1f5f9;
+  --muted: #1e293b;
+  --muted-foreground: #64748b;
+  --popover: #0f172a;
+  --popover-foreground: #e5e7eb;
+  --destructive: #b91c1c;
+  --destructive-foreground: #f8fafc;
+  --primary: #0284c7;
+  --primary-foreground: #e0f2fe;
+  --ring: #2563eb;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+  --color-status-ok: var(--status-ok);
+  --color-status-warn: var(--status-warn);
+  --color-status-critical: var(--status-critical);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Utility helpers */
+.text-balance { text-wrap: balance; }
+
+/* Component base styles bridging tokens to Tailwind class usage */
+.border { border-color: var(--border); }
+.bg-muted { background-color: var(--muted); }
+.text-muted-foreground { color: var(--muted-foreground); }
+.bg-accent { background-color: var(--accent); }
+.text-accent-foreground { color: var(--accent-foreground); }
+.bg-surface { background-color: var(--surface); }
+.bg-popover { background-color: var(--popover); }
+.text-popover-foreground { color: var(--popover-foreground); }
+.bg-destructive { background-color: var(--destructive); }
+.text-destructive-foreground { color: var(--destructive-foreground); }
+.bg-primary { background-color: var(--primary); }
+.text-primary-foreground { color: var(--primary-foreground); }
+
+/* Simple animations (used by some primitives) */
+@keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes zoom-in-95 { from { transform: scale(.95) } to { transform: scale(1) } }
+.animate-in { animation: fade-in .15s ease-out; }
+.zoom-in-95 { animation: zoom-in-95 .15s ease-out; }
+
+.skeleton { position: relative; overflow: hidden; background: linear-gradient(90deg,var(--muted) 0%,var(--muted-foreground) 50%,var(--muted) 100%); background-size: 200% 100%; animation: skeleton 1.2s ease-in-out infinite; }
+@keyframes skeleton { 0%{background-position:0 0} 100%{background-position:-200% 0} }
