@@ -8,6 +8,7 @@
 
 import { NextRequest } from 'next/server';
 import getSimulationEngine from '@/lib/simulation/engine';
+import '@/lib/persistence/subscriber'; // ensure persistence listener attached (Node runtime)
 import type { TelemetrySample } from '@/types/telemetry';
 
 // Track heartbeat intervals per controller without mutating controller objects

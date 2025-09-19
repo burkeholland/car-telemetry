@@ -8,6 +8,7 @@
 
 import { NextRequest } from 'next/server';
 import getSimulationEngine from '@/lib/simulation/engine';
+import '@/lib/persistence/subscriber'; // attach persistence for legacy SSE route
 import type { TelemetrySample } from '@/types/telemetry';
 
 // Connection management (using ReadableStreamDefaultController for SSE)

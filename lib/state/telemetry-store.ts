@@ -132,6 +132,10 @@ export const selectConnection = (s: TelemetryState) => s.connection;
 export const selectCounts = (s: TelemetryState) => ({ total: s.total, valid: s.valid, dropped: s.dropped, parseErrors: s.parseErrors });
 export const selectLatency = (s: TelemetryState) => s.latencyMs;
 export const selectSamples = (s: TelemetryState) => s.samples;
+// Replay selectors
+export const selectMode = (s: TelemetryState) => s.mode;
+export const selectReplayIndex = (s: TelemetryState) => s.replayIndex;
+export const selectReplaySamples = (s: TelemetryState) => s.replaySamples;
 // Alert selectors
 export const selectActiveAlerts = (s: TelemetryState) => Object.values(s.alertsActive);
 export const selectActiveAlertCount = (s: TelemetryState) => Object.keys(s.alertsActive).length;

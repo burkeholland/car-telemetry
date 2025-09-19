@@ -1,6 +1,6 @@
 # Car Telemetry Simulator
 
-A real-time car telemetry dashboard built with Next.js 15, React 19, and shadcn/ui components. Simulates vehicle telemetry data and streams it via WebSocket for live visualization.
+A real-time car telemetry dashboard built with Next.js 15, React 19, and shadcn/ui components. It simulates vehicle telemetry data and streams it via WebSocket for live visualization, with an in-memory persistence layer enabling basic history queries and a manual replay mode (Step 10).
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
@@ -54,7 +54,30 @@ The engine emits `TelemetrySample` events containing:
 
 ## Real-Time Streaming API
 
-### Server-Sent Events (Recommended)
+Primary transport: **WebSocket** (`/api/stream-ws`).  
+Fallback / legacy: **SSE** (`/api/stream-sse` or deprecated `/api/stream`).
+
+### WebSocket (Primary)
+
+```javascript
+const ws = new WebSocket(`ws://${location.host}/api/stream-ws`);
+ws.onmessage = evt => {
+  const msg = JSON.parse(evt.data);
+  switch (msg.type) {
+    case 'connected':
+      console.log('Connected', msg.clientId, msg.metrics); break;
+    case 'telemetry':
+      console.log('Sample', msg.data.speedKph, msg.data.rpm); break;
+    case 'ping':
+      ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
+      break;
+  }
+};
+```
+
+Heartbeat: server sends `ping` every ~15s; client should reply with `pong`.
+
+### Server-Sent Events (Fallback)
 
 Connect to the SSE endpoint for real-time telemetry:
 
@@ -73,18 +96,11 @@ eventSource.onmessage = (event) => {
 };
 ```
 
-### WebSocket Alternative
+### Message Types (Envelope)
 
-The `/api/stream` endpoint also supports SSE clients:
-
-```javascript
-fetch('/api/stream', {
-  headers: { 'Accept': 'text/event-stream' }
-}).then(response => {
-  const reader = response.body.getReader();
-  // Handle streaming data...
-});
-```
+`connected | telemetry | ping | pong | error` (WS).  
+`connected | telemetry | heartbeat` (SSE).  
+All telemetry payloads conform to the `TelemetrySample` Zod schema in `types/telemetry.ts`.
 
 ### Test Streaming
 
@@ -95,15 +111,85 @@ npm run stream:test
 npm run stream:test -- --samples=20 --timeout=30000
 ```
 
-### Message Types
+## Persistence & History (Step 10)
 
-- `connected`: Initial connection confirmation with client ID and metrics
-- `telemetry`: Real-time vehicle data samples  
-- `heartbeat`: Keep-alive messages (every 30s)
+An **in-memory repository** (`lib/persistence/telemetry-repo.ts`) now stores a rolling window of telemetry samples (default retention ~1 hour, hard cap 25k samples). Persistence is active for Node runtime routes (SSE + history). The current WebSocket route runs in Edge runtime and does **not** feed the repository (future improvement: move WS to Node or add a cross-runtime store like LibSQL/Redis).
+
+### History API
+
+`GET /api/history?from=<ms>&to=<ms>&limit=<n>&cursor=<token>`
+
+Parameters:
+- `from` (optional, ms epoch inclusive)
+- `to` (optional, ms epoch exclusive)
+- `limit` (1–500, default 200)
+- `cursor` (base64 index returned as `nextCursor`)
+
+Response:
+```jsonc
+{
+  "samples": [ /* TelemetrySample[] */ ],
+  "count": 200,
+  "nextCursor": "MTAw", // base64 index or omitted
+  "totalAvailable": 1250,
+  "query": { "from": 1737060000000, "to": 1737060123456, "limit": 200 }
+}
+```
+
+Usage pattern (pagination):
+1. Fetch initial window (`from` / `to`).
+2. If `nextCursor` present, request again with same time range + `cursor`.
+
+### Ensuring Data Exists
+1. Open an SSE connection (`/api/stream-sse`) to start the simulation in Node runtime.
+2. Wait a few seconds, then call `/api/history`.
+
+WebSocket-only sessions (edge) currently won't populate history — this is a known limitation.
+
+## Replay Mode (Step 10)
+
+Replay scaffolding allows manual scrubbing through historical samples in the client state store:
+
+Store API (in `telemetry-store.ts`):
+- `enterReplay(samples)`
+- `replaySeek(index)`
+- `exitReplay()`
+
+Selectors: `selectMode`, `selectReplayIndex`, `selectReplaySamples`.
+
+UI: `components/dashboard/replay-controls.tsx` provides:
+- Window input (minutes)
+- Fetch & Enter replay button (pulls up to 500 samples from history API)
+- Range scrubber to step through timeline
+- Exit Replay button
+
+Limitations (current):
+- No automatic playback timer (manual scrub only)
+- No cross-runtime persistence for WS (edge) samples
+- On exit replay, live buffer rebuilds from next incoming samples
+
+Future enhancements (planned):
+- Timed playback with speed control
+- Unified persistence (LibSQL / SQLite) + multi-vehicle history
+- Preloading multi-page history with cursor walks
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Step 10 Summary
+
+Deliverables implemented:
+- In-memory persistence repo + singleton
+- Subscriber attaching simulation samples to repo (SSE routes import it)
+- History API with pagination + time range
+- Replay state in store (live vs replay modes)
+- Replay controls UI (manual entry & scrubbing)
+
+Known gaps vs full plan:
+- WS edge stream not persisted
+- No automated playback timer (scrub only)
+- No server-side tests yet for history endpoint
 
 ## Learn More
 
