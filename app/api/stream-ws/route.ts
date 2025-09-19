@@ -19,6 +19,9 @@ import { TelemetrySample } from '@/types/telemetry';
 import getSimulationEngine from '@/lib/simulation/engine';
 import { WSMessageSchema } from '@/types/transport';
 
+// Enable Edge runtime so WebSocketPair is available
+export const runtime = 'edge';
+
 // Type augmentations for edge runtime globals (suppresses TS complaints)
 // These are soft declarations; underlying platform provides implementation.
 declare global {

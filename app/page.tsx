@@ -3,13 +3,13 @@ import { useTelemetryStore, selectConnection, selectLatency, selectLatest } from
 import { Badge } from "@/components/ui/badge";
 import { ModeToggle } from "@/components/mode-toggle";
 import { AlertsDrawerPlaceholder } from '@/components/dashboard/alerts-drawer';
-import { SpeedGaugePlaceholder } from '@/components/dashboard/speed-gauge';
-import { RpmGaugePlaceholder } from '@/components/dashboard/rpm-gauge';
-import { GearIndicatorPlaceholder } from '@/components/dashboard/gear-indicator';
-import { DriverInputsPlaceholder } from '@/components/dashboard/driver-inputs';
-import { EngineTempsPanelPlaceholder } from '@/components/dashboard/engine-temps-panel';
-import { BatteryPanelPlaceholder } from '@/components/dashboard/battery-panel';
-import { TireGridPlaceholder } from '@/components/dashboard/tire-grid';
+import { SpeedGauge } from '@/components/dashboard/speed-gauge';
+import { RpmGauge } from '@/components/dashboard/rpm-gauge';
+import { GearIndicator } from '@/components/dashboard/gear-indicator';
+import { DriverInputs } from '@/components/dashboard/driver-inputs';
+import { EngineTempsPanel } from '@/components/dashboard/engine-temps-panel';
+import { BatteryPanel } from '@/components/dashboard/battery-panel';
+import { TireGrid } from '@/components/dashboard/tire-grid';
 import { TrackMapStub } from '@/components/dashboard/track-map-stub';
 import { LiveChartsContainerPlaceholder } from '@/components/dashboard/live-charts-container';
 
@@ -45,7 +45,7 @@ export default function DashboardPage() {
               <div className="font-medium">SimCar</div>
               <div className="text-muted-foreground">Session Seed</div>
               <div className="text-[10px] uppercase tracking-wide mt-2 text-muted-foreground">Lap</div>
-              <div className="text-lg font-semibold tabular-nums">1</div>
+              <div className="text-lg font-semibold tabular-nums">{(latest?.lap ?? 0) + 1}</div>
             </div>
           </div>
         </aside>
@@ -53,18 +53,18 @@ export default function DashboardPage() {
           <section>
             <h2 className="sr-only">Primary Gauges</h2>
             <div className="grid md:grid-cols-4 gap-4">
-              <SpeedGaugePlaceholder />
-              <RpmGaugePlaceholder />
-              <GearIndicatorPlaceholder />
-              <DriverInputsPlaceholder />
+              <SpeedGauge />
+              <RpmGauge />
+              <GearIndicator />
+              <DriverInputs />
             </div>
           </section>
           <section>
             <h2 className="sr-only">Systems Panels</h2>
             <div className="grid md:grid-cols-4 gap-4">
-              <EngineTempsPanelPlaceholder />
-              <BatteryPanelPlaceholder />
-              <TireGridPlaceholder />
+              <EngineTempsPanel />
+              <BatteryPanel />
+              <TireGrid />
               <TrackMapStub />
             </div>
           </section>

@@ -14,7 +14,6 @@
  * FUTURE (Phase 2+): multi-vehicle, track polyline geometry, advanced anomalies.
  */
 
-import { EventEmitter } from 'events';
 import type { TelemetrySample, Vehicle } from '@/types/telemetry';
 import { TelemetrySampleSchema } from '@/types/telemetry';
 import { mulberry32, range, normal, chance } from '../prng';
@@ -28,7 +27,7 @@ export interface SimulationOptions {
 
 interface InternalState {
   running: boolean;
-  timer?: NodeJS.Timeout;
+  timer?: ReturnType<typeof setTimeout>;
   lastTs: number;
   gear: number;
   speedKph: number;
@@ -55,6 +54,32 @@ export interface SimulationEngine {
   off(event: 'sample', listener: (sample: TelemetrySample) => void): this;
 }
 
+// Lightweight event emitter (Edge-compatible, no Node 'events' dependency)
+type Listener = (...args: any[]) => void;
+class SimpleEmitter {
+  private _listeners: Record<string, Listener[]> = {};
+  on(event: string, fn: Listener) {
+    (this._listeners[event] ||= []).push(fn);
+    return this;
+  }
+  once(event: string, fn: Listener) {
+    const wrapper: Listener = (...args) => { this.off(event, wrapper); fn(...args); };
+    return this.on(event, wrapper);
+  }
+  off(event: string, fn: Listener) {
+    const arr = this._listeners[event];
+    if (!arr) return this;
+    this._listeners[event] = arr.filter(l => l !== fn);
+    return this;
+  }
+  protected emit(event: string, ...args: any[]) {
+    const arr = this._listeners[event];
+    if (!arr) return;
+    // Copy to guard against mutation during emit
+    [...arr].forEach(l => { try { l(...args); } catch (e) { console.error('Listener error', e); } });
+  }
+}
+
 // Simple virtual vehicle defaults
 const DEFAULT_VEHICLE: Vehicle = {
   id: 'vehicle-001',
@@ -75,7 +100,7 @@ const DOWNSHIFT_RPM = 1600;
 const TRACK_LENGTH_M = 3000; // 3 km simplified loop
 const SECTORS = 3;
 
-class Engine extends EventEmitter implements SimulationEngine {
+class Engine extends SimpleEmitter implements SimulationEngine {
   private opts: { minTickMs: number; maxTickMs: number; vehicle: Vehicle; seed: number };
   private rng = mulberry32(1);
   private state: InternalState;
@@ -276,9 +301,7 @@ function speedToRpm(speedKph: number, gear: number, maxRpm: number): number {
 
 // Singleton Accessor ---------------------------------------------------------
 
-export interface SimulationSingleton {
-  engine: SimulationEngine;
-}
+export interface SimulationSingleton { engine: SimulationEngine; }
 
 declare global {
   var __SIM_ENGINE__: SimulationSingleton | undefined;
