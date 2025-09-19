@@ -19,6 +19,14 @@ interface TelemetryState {
   connection: ConnectionStatus;
   latencyMs: number | null; // last computed latency
   lastUpdated: number | null; // timestamp of last accepted sample
+  // Replay mode -----------------------------------------------------------
+  mode: 'live' | 'replay';
+  replayIndex: number; // current index into replaySamples
+  replaySamples: TelemetrySample[]; // loaded history set when in replay
+  replaySpeed: number; // multiplier (1x, 2x, etc.) – not yet used for timer scheduling
+  enterReplay: (samples: TelemetrySample[]) => void;
+  replaySeek: (index: number) => void;
+  exitReplay: () => void;
   // Alert engine state
   alertsActive: Record<string, Alert>;
   alertsHistory: Alert[];
@@ -45,10 +53,40 @@ const creator: StateCreator<TelemetryState> = (set, get) => ({
   alertsHistory: initialAlertEngineState().history,
   alertRuntimes: initialAlertEngineState().runtimes,
   lastCriticalAlertIds: [],
+  mode: 'live',
+  replayIndex: 0,
+  replaySamples: [],
+  replaySpeed: 1,
+  enterReplay: (replaySamples: TelemetrySample[]) => set(() => ({
+    mode: 'replay',
+    replaySamples,
+    replayIndex: 0,
+    // freeze live latest to first replay sample (if exists)
+    latest: replaySamples[0],
+    samples: replaySamples, // show whole range for charts initially
+  })),
+  replaySeek: (index: number) => set(state => {
+    if (state.mode !== 'replay') return {} as any;
+    const clamped = Math.max(0, Math.min(index, state.replaySamples.length - 1));
+    const latest = state.replaySamples[clamped];
+    return {
+      replayIndex: clamped,
+      latest,
+      samples: state.replaySamples.slice(0, clamped + 1),
+    };
+  }),
+  exitReplay: () => set(state => ({
+    mode: 'live',
+    replaySamples: [],
+    replayIndex: 0,
+    samples: [],
+    latest: state.latest, // keep last known sample (will be replaced by next live push)
+  })),
   setConnection: (connection: ConnectionStatus) => set({ connection }),
   setLatency: (latencyMs: number) => set({ latencyMs }),
   pushSample: (raw: unknown) => {
     const state = get();
+    if (state.mode === 'replay') return; // ignore live pushes during replay
     const total = state.total + 1;
     const parsed = safeValidateTelemetrySample(raw);
     if (!parsed.success) {
