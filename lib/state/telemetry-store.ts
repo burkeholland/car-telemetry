@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { StateCreator } from 'zustand';
-import { TelemetrySample, safeValidateTelemetrySample } from '@/types/telemetry';
+import { TelemetrySample, safeValidateTelemetrySample, Alert } from '@/types/telemetry';
+import { evaluateAlerts, initialAlertEngineState, InternalRuleRuntime } from '@/lib/alerts/alert-engine';
 
 // Ring buffer capacity (can be made configurable later via provider prop or env)
 const DEFAULT_CAPACITY = 2000;
@@ -18,6 +19,11 @@ interface TelemetryState {
   connection: ConnectionStatus;
   latencyMs: number | null; // last computed latency
   lastUpdated: number | null; // timestamp of last accepted sample
+  // Alert engine state
+  alertsActive: Record<string, Alert>;
+  alertsHistory: Alert[];
+  alertRuntimes: Record<string, InternalRuleRuntime>;
+  lastCriticalAlertIds: string[]; // ephemeral list of ids newly critical in latest push
   setConnection: (s: ConnectionStatus) => void;
   pushSample: (raw: unknown) => void;
   setLatency: (latency: number) => void;
@@ -35,6 +41,10 @@ const creator: StateCreator<TelemetryState> = (set, get) => ({
   connection: 'idle',
   latencyMs: null,
   lastUpdated: null,
+  alertsActive: initialAlertEngineState().active,
+  alertsHistory: initialAlertEngineState().history,
+  alertRuntimes: initialAlertEngineState().runtimes,
+  lastCriticalAlertIds: [],
   setConnection: (connection: ConnectionStatus) => set({ connection }),
   setLatency: (latencyMs: number) => set({ latencyMs }),
   pushSample: (raw: unknown) => {
@@ -51,6 +61,14 @@ const creator: StateCreator<TelemetryState> = (set, get) => ({
       ? [...state.samples.slice(1), sample]
       : [...state.samples, sample];
     const dropped = state.samples.length >= state.capacity ? state.dropped + 1 : state.dropped;
+
+    // Evaluate alerts using existing alert engine state
+    const { active, history, runtimes, newlyCritical } = evaluateAlerts(sample, {
+      active: state.alertsActive,
+      history: state.alertsHistory,
+      runtimes: state.alertRuntimes,
+    });
+
     set({
       samples,
       latest: sample,
@@ -59,6 +77,10 @@ const creator: StateCreator<TelemetryState> = (set, get) => ({
       dropped,
       latencyMs: latency,
       lastUpdated: sample.timestamp,
+      alertsActive: active,
+      alertsHistory: history,
+      alertRuntimes: runtimes,
+      lastCriticalAlertIds: newlyCritical.map(a => a.id),
     });
   },
   reset: () => set({ samples: [], latest: undefined, total: 0, valid: 0, dropped: 0, parseErrors: 0, latencyMs: null, lastUpdated: null }),
@@ -72,3 +94,9 @@ export const selectConnection = (s: TelemetryState) => s.connection;
 export const selectCounts = (s: TelemetryState) => ({ total: s.total, valid: s.valid, dropped: s.dropped, parseErrors: s.parseErrors });
 export const selectLatency = (s: TelemetryState) => s.latencyMs;
 export const selectSamples = (s: TelemetryState) => s.samples;
+// Alert selectors
+export const selectActiveAlerts = (s: TelemetryState) => Object.values(s.alertsActive);
+export const selectActiveAlertCount = (s: TelemetryState) => Object.keys(s.alertsActive).length;
+export const selectCriticalActiveCount = (s: TelemetryState) => Object.values(s.alertsActive).filter(a => a.severity === 'critical').length;
+export const selectAlertHistory = (s: TelemetryState) => s.alertsHistory;
+export const selectLastNewCriticalIds = (s: TelemetryState) => s.lastCriticalAlertIds;

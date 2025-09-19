@@ -17,6 +17,9 @@ interface TelemetryProviderProps {
 export function TelemetryProvider({ children, maxBackoffMs = 15000 }: TelemetryProviderProps) {
   const setConnection = useTelemetryStore(state => state.setConnection);
   const pushSample = useTelemetryStore(state => state.pushSample);
+  // Local queue for rAF batching
+  const queueRef = useRef<unknown[]>([]);
+  const rafRef = useRef<number | null>(null);
   const attemptRef = useRef(0);
   const wsRef = useRef<WebSocket | null>(null);
   const fallbackEsRef = useRef<EventSource | null>(null);
@@ -60,21 +63,20 @@ export function TelemetryProvider({ children, maxBackoffMs = 15000 }: TelemetryP
           const parsed = safeParseWSMessage(JSON.parse(ev.data));
           if (!parsed.success) return;
           const msg = parsed.data;
-            switch (msg.type) {
-              case 'telemetry':
-                pushSample(msg.data);
-                break;
-              case 'ping':
-                lastPingRef.current = Date.now();
-                // respond with pong (include simple rtt estimation if desired)
-                try { ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() })); } catch {}
-                break;
-              case 'connected':
-              case 'pong':
-              case 'error':
-              default:
-                break;
-            }
+          switch (msg.type) {
+            case 'telemetry':
+              enqueue(msg.data);
+              break;
+            case 'ping':
+              lastPingRef.current = Date.now();
+              try { ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() })); } catch {}
+              break;
+            case 'connected':
+            case 'pong':
+            case 'error':
+            default:
+              break;
+          }
         } catch {
           // ignore
         }
@@ -131,12 +133,30 @@ export function TelemetryProvider({ children, maxBackoffMs = 15000 }: TelemetryP
         try { const p = JSON.parse(ev.data); if (p?.type === 'telemetry') pushSample(p.data); } catch {}
       };
     }
+    function enqueue(raw: unknown) {
+      queueRef.current.push(raw);
+      if (rafRef.current == null) {
+        rafRef.current = requestAnimationFrame(flushQueue);
+      }
+    }
+
+    function flushQueue() {
+      rafRef.current = null;
+      const q = queueRef.current;
+      if (q.length) {
+        for (let i = 0; i < q.length; i++) pushSample(q[i]);
+        queueRef.current = [];
+      }
+    }
+
     return () => {
       stoppedRef.current = true;
       wsRef.current?.close();
       fallbackEsRef.current?.close();
       stopHeartbeatMonitor();
       setConnection('closed');
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      queueRef.current = [];
     };
   }, [maxBackoffMs, pushSample, setConnection]);
 

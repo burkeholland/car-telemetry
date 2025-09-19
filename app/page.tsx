@@ -2,7 +2,7 @@
 import { useTelemetryStore, selectConnection, selectLatency, selectLatest } from '@/lib/state/telemetry-store';
 import { Badge } from "@/components/ui/badge";
 import { ModeToggle } from "@/components/mode-toggle";
-import { AlertsDrawerPlaceholder } from '@/components/dashboard/alerts-drawer';
+import { AlertsDrawer } from '@/components/dashboard/alerts-drawer';
 import { SpeedGauge } from '@/components/dashboard/speed-gauge';
 import { RpmGauge } from '@/components/dashboard/rpm-gauge';
 import { GearIndicator } from '@/components/dashboard/gear-indicator';
@@ -33,7 +33,7 @@ export default function DashboardPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <AlertsDrawerPlaceholder />
+          <AlertsDrawer />
           <ModeToggle />
         </div>
       </header>
@@ -75,8 +75,8 @@ export default function DashboardPage() {
         </main>
       </div>
       <footer className="px-6 py-3 border-t text-[11px] text-muted-foreground flex items-center justify-between">
-        <span>Dashboard Skeleton (Step 6)</span>
-        <span>Next: Bind live data (Step 7)</span>
+        <span>Alerts Engine Active (Step 9)</span>
+        <span>Next: Persistence & Replay (Step 10)</span>
       </footer>
     </div>
   );
